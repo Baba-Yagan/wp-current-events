@@ -85,10 +85,39 @@ def create_rss_feed(items, title="Wikipedia Current Events", description="Curren
     
     return ET.tostring(rss, encoding="unicode")
 
+def load_existing_rss_items(filename="current_events.rss"):
+    """Load existing RSS items from file"""
+    if not os.path.exists(filename):
+        return []
+    
+    try:
+        tree = ET.parse(filename)
+        root = tree.getroot()
+        items = []
+        
+        for item in root.findall(".//item"):
+            title_elem = item.find("title")
+            desc_elem = item.find("description")
+            link_elem = item.find("link")
+            pubdate_elem = item.find("pubDate")
+            
+            if all(elem is not None for elem in [title_elem, desc_elem, link_elem, pubdate_elem]):
+                items.append({
+                    "title": title_elem.text,
+                    "description": desc_elem.text,
+                    "link": link_elem.text,
+                    "pubDate": pubdate_elem.text
+                })
+        
+        return items
+    except ET.ParseError:
+        return []
+
 def generate_current_events_rss(days=7):
     """Generate RSS feed for Wikipedia current events for the last X days"""
     fetched_dates = load_fetched_dates()
-    items = []
+    existing_items = load_existing_rss_items()
+    new_items = []
     updated_fetched_dates = fetched_dates.copy()
     
     for i in range(days):
@@ -113,7 +142,7 @@ def generate_current_events_rss(days=7):
                     "link": f"https://en.wikipedia.org/wiki/Portal:Current_events/{date.strftime('%Y_%B_%d')}",
                     "pubDate": formatdate(time.mktime(date.timetuple()))
                 }
-                items.append(item)
+                new_items.append(item)
                 updated_fetched_dates[date] = time.time()
                 print(f"Successfully processed {date.strftime('%Y-%m-%d')}")
             else:
@@ -123,10 +152,21 @@ def generate_current_events_rss(days=7):
             print(f"Error processing {date.strftime('%Y-%m-%d')}: {e}")
             continue
     
+    # Merge new items with existing items, removing duplicates by link
+    all_items = new_items.copy()
+    existing_links = {item["link"] for item in new_items}
+    
+    for existing_item in existing_items:
+        if existing_item["link"] not in existing_links:
+            all_items.append(existing_item)
+    
+    # Sort by date (newest first)
+    all_items.sort(key=lambda x: x["pubDate"], reverse=True)
+    
     # Save updated fetch tracking
     save_fetched_dates(updated_fetched_dates)
     
-    return create_rss_feed(items)
+    return create_rss_feed(all_items)
 
 if __name__ == "__main__":
     import sys
