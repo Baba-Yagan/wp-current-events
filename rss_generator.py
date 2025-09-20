@@ -120,13 +120,20 @@ def generate_current_events_rss(days=7):
     new_items = []
     updated_fetched_dates = fetched_dates.copy()
     
+    # Find dates that need fetching
+    dates_to_fetch = []
     for i in range(days):
         date = datetime.now() - timedelta(days=i)
-        
-        if not should_fetch_date(date, fetched_dates):
-            print(f"Skipping {date.strftime('%Y-%m-%d')} (more than 2 days old and already fetched)")
-            continue
-            
+        if should_fetch_date(date, fetched_dates):
+            dates_to_fetch.append(date)
+    
+    if not dates_to_fetch:
+        print("No dates need updating. Using existing RSS content.")
+        return create_rss_feed(existing_items)
+    
+    print(f"Need to fetch {len(dates_to_fetch)} dates: {[d.strftime('%Y-%m-%d') for d in dates_to_fetch]}")
+    
+    for date in dates_to_fetch:
         url = generate_wikipedia_url(date)
         
         try:
