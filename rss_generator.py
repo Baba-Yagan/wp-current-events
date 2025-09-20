@@ -4,6 +4,8 @@ from datetime import datetime, timedelta
 from fetch_wiki import fetch_wikipedia_textarea
 from email.utils import formatdate
 import time
+import json
+import os
 
 def parse_wikitext_to_html(wikitext):
     """Parse wikitext to HTML using Wikipedia API"""
@@ -22,6 +24,41 @@ def parse_wikitext_to_html(wikitext):
     resp.raise_for_status()
     data = resp.json()
     return data["parse"]["text"]["*"]
+
+def load_fetched_dates(filename="fetched_dates.json"):
+    """Load previously fetched dates from JSON file"""
+    if os.path.exists(filename):
+        try:
+            with open(filename, "r") as f:
+                data = json.load(f)
+                # Convert string dates back to datetime objects
+                return {datetime.fromisoformat(date): fetched_time for date, fetched_time in data.items()}
+        except (json.JSONDecodeError, ValueError):
+            return {}
+    return {}
+
+def save_fetched_dates(fetched_dates, filename="fetched_dates.json"):
+    """Save fetched dates to JSON file"""
+    # Convert datetime objects to ISO format strings
+    data = {date.isoformat(): fetched_time for date, fetched_time in fetched_dates.items()}
+    with open(filename, "w") as f:
+        json.dump(data, f, indent=2)
+
+def should_fetch_date(date, fetched_dates):
+    """Determine if a date should be fetched based on age and previous fetch time"""
+    now = datetime.now()
+    days_old = (now.date() - date.date()).days
+    
+    # Always fetch if we haven't fetched this date before
+    if date not in fetched_dates:
+        return True
+    
+    # Don't update if the date is more than 2 days old
+    if days_old > 2:
+        return False
+    
+    # For dates 2 days old or newer, always update
+    return True
 
 def generate_wikipedia_url(date):
     """Generate Wikipedia current events URL for a given date"""
@@ -50,10 +87,17 @@ def create_rss_feed(items, title="Wikipedia Current Events", description="Curren
 
 def generate_current_events_rss(days=7):
     """Generate RSS feed for Wikipedia current events for the last X days"""
+    fetched_dates = load_fetched_dates()
     items = []
+    updated_fetched_dates = fetched_dates.copy()
     
     for i in range(days):
         date = datetime.now() - timedelta(days=i)
+        
+        if not should_fetch_date(date, fetched_dates):
+            print(f"Skipping {date.strftime('%Y-%m-%d')} (more than 2 days old and already fetched)")
+            continue
+            
         url = generate_wikipedia_url(date)
         
         try:
@@ -70,6 +114,7 @@ def generate_current_events_rss(days=7):
                     "pubDate": formatdate(time.mktime(date.timetuple()))
                 }
                 items.append(item)
+                updated_fetched_dates[date] = time.time()
                 print(f"Successfully processed {date.strftime('%Y-%m-%d')}")
             else:
                 print(f"No content found for {date.strftime('%Y-%m-%d')}")
@@ -77,6 +122,9 @@ def generate_current_events_rss(days=7):
         except Exception as e:
             print(f"Error processing {date.strftime('%Y-%m-%d')}: {e}")
             continue
+    
+    # Save updated fetch tracking
+    save_fetched_dates(updated_fetched_dates)
     
     return create_rss_feed(items)
 
