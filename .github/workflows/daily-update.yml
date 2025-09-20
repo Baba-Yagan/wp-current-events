@@ -1,0 +1,57 @@
+name: Daily Wikipedia Current Events RSS Update
+
+on:
+  schedule:
+    # Run daily at 12:00 UTC
+    - cron: '0 12 * * *'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  update-current-events:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch all history for tagging
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: Run RSS generator
+      run: |
+        python rss_generator.py
+        
+    - name: Commit and push RSS updates
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        
+        # Generate timestamp
+        TIMESTAMP=$(date +"%Y%m%d-%H%M%S")
+        
+        # Add RSS file and fetched dates database
+        git add current_events.rss fetched_dates.json
+        
+        # Check if there are changes to commit
+        if git diff --staged --quiet; then
+          echo "No changes to RSS feed"
+        else
+          git commit -m "RSS update: $TIMESTAMP"
+          git push origin main
+          
+          echo "RSS feed updated and pushed to main branch"
+          echo "RSS feed available at: https://raw.githubusercontent.com/Baba-Yagan/wp-current-events/refs/heads/main/current_events.rss"
+        fi
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
