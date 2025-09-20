@@ -1,6 +1,9 @@
 import requests
+from fetch_wiki import fetch_wikipedia_textarea
 
-wikitext = "==Title==\nThis is '''bold''' text."
+# Fetch wikitext from Wikipedia edit page
+url = "https://en.wikipedia.org/w/index.php?title=Portal:Current_events/2025_September_19&action=edit&editintro=Portal:Current_events/Edit_instructions"
+wikitext = fetch_wikipedia_textarea(url)
 
 headers = {
 "User-Agent": "wp-current-events/1.0 (https://github.com/Baba-Yagan/wp-current-events)"
