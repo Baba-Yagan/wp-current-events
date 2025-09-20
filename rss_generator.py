@@ -31,15 +31,15 @@ def load_fetched_dates(filename="fetched_dates.json"):
         try:
             with open(filename, "r") as f:
                 data = json.load(f)
-                # Convert string dates back to datetime objects
-                return {datetime.fromisoformat(date): fetched_time for date, fetched_time in data.items()}
+                # Convert string dates back to datetime objects, normalize to date only
+                return {datetime.fromisoformat(date).date(): fetched_time for date, fetched_time in data.items()}
         except (json.JSONDecodeError, ValueError):
             return {}
     return {}
 
 def save_fetched_dates(fetched_dates, filename="fetched_dates.json"):
     """Save fetched dates to JSON file"""
-    # Convert datetime objects to ISO format strings
+    # Convert date objects to ISO format strings
     data = {date.isoformat(): fetched_time for date, fetched_time in fetched_dates.items()}
     with open(filename, "w") as f:
         json.dump(data, f, indent=2)
@@ -47,13 +47,14 @@ def save_fetched_dates(fetched_dates, filename="fetched_dates.json"):
 def should_fetch_date(date, fetched_dates):
     """Determine if a date should be fetched based on age and previous fetch time"""
     now = datetime.now()
-    days_old = (now.date() - date.date()).days
+    date_only = date.date()
+    days_old = (now.date() - date_only).days
     
     # Always fetch if we haven't fetched this date before
-    if date not in fetched_dates:
+    if date_only not in fetched_dates:
         return True
     
-    # Don't update if the date is more than 2 days old
+    # Don't update if the date is more than 2 days old AND we've already fetched it
     if days_old > 2:
         return False
     
@@ -150,7 +151,7 @@ def generate_current_events_rss(days=7):
                     "pubDate": formatdate(time.mktime(date.timetuple()))
                 }
                 new_items.append(item)
-                updated_fetched_dates[date] = time.time()
+                updated_fetched_dates[date.date()] = time.time()
                 print(f"Successfully processed {date.strftime('%Y-%m-%d')}")
             else:
                 print(f"No content found for {date.strftime('%Y-%m-%d')}")
