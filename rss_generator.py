@@ -6,6 +6,7 @@ from email.utils import formatdate
 import time
 import json
 import os
+import re
 
 def parse_wikitext_to_html(wikitext):
     """Parse wikitext to HTML using Wikipedia API"""
@@ -23,7 +24,13 @@ def parse_wikitext_to_html(wikitext):
     
     resp.raise_for_status()
     data = resp.json()
-    return data["parse"]["text"]["*"]
+    html_content = data["parse"]["text"]["*"]
+    
+    # Replace relative Wikipedia links with absolute links to English Wikipedia
+    html_content = re.sub(r'href="/wiki/', r'href="https://en.wikipedia.org/wiki/', html_content)
+    html_content = re.sub(r'href="/w/', r'href="https://en.wikipedia.org/w/', html_content)
+    
+    return html_content
 
 def load_fetched_dates(filename="fetched_dates.json"):
     """Load previously fetched dates from JSON file"""
