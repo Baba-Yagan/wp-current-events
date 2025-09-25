@@ -27,7 +27,7 @@ def parse_wikitext_to_html(wikitext):
     html_content = data["parse"]["text"]["*"]
     
     # Strip HTML comments
-    html_content = re.sub(r'<!--.*?-->', '', html_content, flags=re.DOTALL)
+    html_content = re.sub(r'<!--.*?-->', '', html_content)
     
     # Replace relative Wikipedia links with absolute links to English Wikipedia
     html_content = re.sub(r'href="/wiki/', r'href="https://en.wikipedia.org/wiki/', html_content)
