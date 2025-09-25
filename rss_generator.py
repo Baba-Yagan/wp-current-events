@@ -7,6 +7,7 @@ import time
 import json
 import os
 import re
+from bs4 import BeautifulSoup, Comment
 
 def parse_wikitext_to_html(wikitext):
     """Parse wikitext to HTML using Wikipedia API"""
@@ -26,8 +27,15 @@ def parse_wikitext_to_html(wikitext):
     data = resp.json()
     html_content = data["parse"]["text"]["*"]
     
-    # Strip HTML comments
-    html_content = re.sub(r'<!--.*?-->', '', html_content)
+    # Parse HTML and strip comments using BeautifulSoup
+    soup = BeautifulSoup(html_content, 'html.parser')
+    
+    # Remove all HTML comments
+    for comment in soup.find_all(string=lambda text: isinstance(text, Comment)):
+        comment.extract()
+    
+    # Convert back to string
+    html_content = str(soup)
     
     # Replace relative Wikipedia links with absolute links to English Wikipedia
     html_content = re.sub(r'href="/wiki/', r'href="https://en.wikipedia.org/wiki/', html_content)
