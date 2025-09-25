@@ -31,8 +31,8 @@ def parse_wikitext_to_html(wikitext):
     soup = BeautifulSoup(html_content, 'html.parser')
     
     # Remove all HTML comments
-    for comment in soup.find_all(string=lambda text: isinstance(text, Comment)):
-        comment.extract()
+    for element in soup(text=lambda text: isinstance(text, Comment)):
+        element.extract()
     
     # Convert back to string
     html_content = str(soup)
