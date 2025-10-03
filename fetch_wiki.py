@@ -34,7 +34,7 @@ def fetch_wikipedia_textarea(url):
     tree = html.fromstring(resp.content)
     textarea_content = tree.xpath('//*[@id="wpTextbox1"]')[0].text
     
-    print(f"Saved full response to {filename}")
+    # print(f"Saved full response to {filename}")
     return textarea_content
 
 if __name__ == "__main__":
