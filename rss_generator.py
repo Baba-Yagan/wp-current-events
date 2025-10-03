@@ -81,8 +81,9 @@ def should_fetch_date(date, fetched_dates):
 
 def generate_wikipedia_url(date):
     """Generate Wikipedia current events URL for a given date"""
-    # Use %-d to avoid leading zeros for day
-    date_str = date.strftime("%Y_%B_%-d")
+    # Format day without leading zeros (portable way)
+    day = str(date.day)  # This removes leading zeros
+    date_str = f"{date.year}_{date.strftime('%B')}_{day}"
     return f"https://en.wikipedia.org/w/index.php?title=Portal:Current_events/{date_str}&action=edit&editintro=Portal:Current_events/Edit_instructions"
 
 def create_rss_feed(items, title="Wikipedia Current Events", description="Current events from Wikipedia"):
@@ -166,7 +167,7 @@ def generate_current_events_rss(days=7):
                 item = {
                     "title": f"Current Events - {date.strftime('%B %d, %Y')}",
                     "description": html_content,
-                    "link": f"https://en.wikipedia.org/wiki/Portal:Current_events/{date.strftime('%Y_%B_%d')}",
+                    "link": f"https://en.wikipedia.org/wiki/Portal:Current_events/{date.year}_{date.strftime('%B')}_{date.day}",
                     "pubDate": formatdate(time.mktime(date.timetuple()))
                 }
                 new_items.append(item)
