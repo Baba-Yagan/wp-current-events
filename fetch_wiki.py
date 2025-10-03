@@ -14,22 +14,22 @@ def fetch_wikipedia_textarea(url):
     resp = requests.get(url, headers=headers, timeout=10)
     resp.raise_for_status()
     
-    # Create result directory if it doesn't exist
-    os.makedirs("result", exist_ok=True)
+    # # Create result directory if it doesn't exist
+    # os.makedirs("result", exist_ok=True)
     
     # Extract date from URL for filename
     parsed_url = urlparse(url)
     query_params = parse_qs(parsed_url.query)
     title = query_params.get('title', ['unknown'])[0]
     
-    # Create filename from title and timestamp
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    safe_title = title.replace(':', '_').replace('/', '_')
-    filename = f"result/{safe_title}_{timestamp}.html"
+    # # Create filename from title and timestamp
+    # timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    # safe_title = title.replace(':', '_').replace('/', '_')
+    # filename = f"result/{safe_title}_{timestamp}.html"
     
-    # Save full HTML response
-    with open(filename, 'w', encoding='utf-8') as f:
-        f.write(resp.text)
+    # # Save full HTML response
+    # with open(filename, 'w', encoding='utf-8') as f:
+    #     f.write(resp.text)
     
     tree = html.fromstring(resp.content)
     textarea_content = tree.xpath('//*[@id="wpTextbox1"]')[0].text
