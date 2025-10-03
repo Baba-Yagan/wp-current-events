@@ -6,6 +6,7 @@ from urllib.parse import urlparse, parse_qs
 
 def fetch_wikipedia_textarea(url):
     """Fetch content from Wikipedia edit page textarea"""
+    print(f"Requesting URL: {url}")
     headers = {
         "User-Agent": "wp-current-events/1.0 (https://github.com/Baba-Yagan/wp-current-events)"
     }
