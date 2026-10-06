@@ -8,7 +8,8 @@ on:
 
 jobs:
   update-current-events:
-    runs-on: ubuntu-latest
+    # Pin to ubuntu-24.04 until ubuntu-latest stops migrating mid-October 2026
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
     

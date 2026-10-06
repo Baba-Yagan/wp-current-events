@@ -10,29 +10,40 @@ import re
 from bs4 import BeautifulSoup, Comment
 
 
-def parse_wikitext_to_html(wikitext):
-    """Parse wikitext to HTML using Wikipedia API"""
+def parse_wikitext_to_html(wikitext, retries=3):
+    """Parse wikitext to HTML using Wikipedia API (with retries)"""
     headers = {
         "User-Agent": "wp-current-events/1.0 (https://github.com/Baba-Yagan/wp-current-events)"
     }
 
-    resp = requests.post(
-        "https://en.wikipedia.org/w/api.php",
-        params={"action": "parse", "format": "json", "contentmodel": "wikitext"},
-        data={"text": wikitext},
-        headers=headers,
-        timeout=10,
-    )
-
-    resp.raise_for_status()
-    data = resp.json()
+    last_exc = None
+    for attempt in range(retries):
+        try:
+            resp = requests.post(
+                "https://en.wikipedia.org/w/api.php",
+                params={"action": "parse", "format": "json", "contentmodel": "wikitext"},
+                data={"text": wikitext},
+                headers=headers,
+                timeout=15,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            break
+        except (requests.RequestException, KeyError) as e:
+            last_exc = e
+            if attempt < retries - 1:
+                wait = 2 ** attempt
+                print(f"Wikipedia API error (attempt {attempt+1}/{retries}), retrying in {wait}s: {e}")
+                time.sleep(wait)
+            else:
+                raise last_exc
     html_content = data["parse"]["text"]["*"]
 
     # Parse HTML and strip comments using BeautifulSoup
     soup = BeautifulSoup(html_content, "html.parser")
 
     # Remove all HTML comments
-    for element in soup(text=lambda text: isinstance(text, Comment)):
+    for element in soup(string=lambda text: isinstance(text, Comment)):
         element.extract()
 
     # Convert back to string
